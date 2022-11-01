@@ -156,18 +156,27 @@ class VCRConnection:
         default_port = {"https": 443, "http": 80}[self._protocol]
         return ":{}".format(port) if port != default_port else ""
 
+    def _host_postfix(self):
+        """
+        Returns the host, surrounded by '[]' if the host is an IPv6 address.
+        """
+        host = self.real_connection.host
+        if ':' in host and not host.startswith('['):
+            return f'[{host}]'
+        return host
+
     def _uri(self, url):
         """Returns request absolute URI"""
         if url and not url.startswith("/"):
             # Then this must be a proxy request.
             return url
-        uri = "{}://{}{}{}".format(self._protocol, self.real_connection.host, self._port_postfix(), url)
+        uri = "{}://{}{}{}".format(self._protocol, self._host_postfix(), self._port_postfix(), url)
         log.debug("Absolute URI: %s", uri)
         return uri
 
     def _url(self, uri):
         """Returns request selector url from absolute URI"""
-        prefix = "{}://{}{}".format(self._protocol, self.real_connection.host, self._port_postfix())
+        prefix = "{}://{}{}".format(self._protocol, self._host_postfix(), self._port_postfix())
         return uri.replace(prefix, "", 1)
 
     def request(self, method, url, body=None, headers=None, *args, **kwargs):

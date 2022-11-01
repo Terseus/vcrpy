@@ -34,6 +34,17 @@ def test_ignore_localhost(tmpdir, httpbin):
             assert len(cass) == 1
 
 
+# FIXME: This fails because it cannot connect to "::1" since httpbin only supports IPv4
+def test_ignore_ipv6_loopback(tmpdir, httpbin):
+    with overridden_dns({"httpbin.org": "127.0.0.1"}):
+        cass_file = str(tmpdir.join("filter_qs.yaml"))
+        with vcr.use_cassette(cass_file, ignore_localhost=True) as cass:
+            urlopen("http://[::1]:{}/".format(httpbin.port))
+            assert len(cass) == 0
+            urlopen("http://httpbin.org:{}/".format(httpbin.port))
+            assert len(cass) == 1
+
+
 def test_ignore_httpbin(tmpdir, httpbin):
     with overridden_dns({"httpbin.org": "127.0.0.1"}):
         cass_file = str(tmpdir.join("filter_qs.yaml"))
